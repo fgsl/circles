@@ -78,5 +78,23 @@ class ProviderSubjectCircle extends ProviderParser {
 		throw new FakeException();
 	}
 
-
+	/**
+	 * @param IEvent $event
+	 * @param Circle $circle
+	 *
+	 * @throws FakeException
+	 */
+	public function parseSubjectCircleChange(IEvent &$event, Circle $circle) {
+		if ($event->getSubject() !== 'circle_change') {
+			return;
+		}
+	
+		$this->parseCircleEvent(
+				$event, $circle, null,
+				$this->l10n->t('You changed circle {circle}'),
+				$this->l10n->t('{author} changed circle {circle}')
+		);
+	
+		throw new FakeException();
+	}
 }

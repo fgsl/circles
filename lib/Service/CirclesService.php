@@ -49,8 +49,10 @@ use OCA\Circles\Model\Circle;
 use OCA\Circles\Model\Member;
 use OCP\IGroupManager;
 use OCP\IL10N;
+use OCP\Util;
+use OC\Share\Share;
 
-class CirclesService {
+class CirclesService extends BaseService {
 
 	/** @var string */
 	private $userId;
@@ -159,6 +161,9 @@ class CirclesService {
 		try {
 			$this->circlesRequest->createCircle($circle, $this->userId);
 			$this->membersRequest->createMember($circle->getOwner());
+			
+			$owner = $circle->getOwner()->getDisplayName();
+			$this->miscService->log("user $owner created circle $name");
 		} catch (CircleAlreadyExistsException $e) {
 			throw $e;
 		}
@@ -208,17 +213,18 @@ class CirclesService {
 	 * returns details on circle and its members if this->userId is a member itself.
 	 *
 	 * @param string $circleUniqueId
-	 *
+	 * @param boolean $getMembers
 	 * @return Circle
 	 * @throws \Exception
 	 */
-	public function detailsCircle($circleUniqueId) {
+	public function detailsCircle($circleUniqueId, $getMembers = false) {
 
 		try {
 			$circle = $this->circlesRequest->getCircle($circleUniqueId, $this->userId);
 			if ($this->viewerIsAdmin()
 				|| $circle->getHigherViewer()
-						  ->isLevel(Member::LEVEL_MEMBER)
+						  ->isLevel(Member::LEVEL_MEMBER
+				|| $getMembers)
 			) {
 				$this->detailsCircleMembers($circle);
 				$this->detailsCircleLinkedGroups($circle);
@@ -243,6 +249,7 @@ class CirclesService {
 		if ($this->viewerIsAdmin()) {
 			$members = $this->membersRequest->forceGetMembers($circle->getUniqueId());
 		} else {
+			$this->higherViewerCircle($circle);
 			$members = $this->membersRequest->getMembers(
 				$circle->getUniqueId(), $circle->getHigherViewer()
 			);
@@ -310,15 +317,22 @@ class CirclesService {
 			if (!$this->viewerIsAdmin()) {
 				$settings['members_limit'] = $circle->getSetting('members_limit');
 			}
-
+			$formerCircleName = $circle->getName();
 			$ak = array_keys($settings);
+			$changes = '';
 			foreach ($ak AS $k) {
+				if (trim($circle->getSetting($k)) !== trim($settings[$k])){
+					$changes .=  ((empty($changes) ? '' : ' and ') . "$k to {$settings[$k]}");
+				}
 				$circle->setSetting($k, $settings[$k]);
 			}
 
 			$this->circlesRequest->updateCircle($circle, $this->userId);
 
 			$this->eventsService->onSettingsChange($circle);
+			
+			$user = $this->getUser()->getDisplayName();
+			$this->miscService->log("user $user updated circle $formerCircleName changing $changes");
 		} catch (\Exception $e) {
 			throw $e;
 		}
@@ -343,6 +357,7 @@ class CirclesService {
 			$member = $this->membersRequest->getFreshNewMember(
 				$circleUniqueId, $this->userId, Member::TYPE_USER
 			);
+			$formerStatus = $member->getStatus();
 			$member->hasToBeAbleToJoinTheCircle();
 			$this->checkThatCircleIsNotFull($circle);
 
@@ -350,6 +365,17 @@ class CirclesService {
 			$this->membersRequest->updateMember($member);
 
 			$this->eventsService->onMemberNew($circle, $member);
+			
+			$circleName = $circle->getName();
+			$circleType = $circle->getType();
+			$memberName = $member->getDisplayName();
+			if ($formerStatus == Member::STATUS_INVITED){
+				$this->miscService->log("member $memberName accepted invitation to circle $circleName");
+			} else if ($circle->getType() == Circle::CIRCLES_CLOSED) {
+				$this->miscService->log("member $memberName requested to join circle $circleName");
+			} else {
+				$this->miscService->log("member $memberName joined circle $circleName");
+			}
 		} catch (\Exception $e) {
 			throw $e;
 		}
@@ -374,10 +400,22 @@ class CirclesService {
 		$member->hasToBeMemberOrAlmost();
 		$member->cantBeOwner();
 
+		$circleName = $circle->getName();
+		$formerStatus = $member->getStatus();
+		$memberName = $member->getDisplayName();
+		
 		$this->eventsService->onMemberLeaving($circle, $member);
 
 		$this->membersRequest->removeMember($member);
 		$this->sharesRequest->removeSharesFromMember($member);
+
+		if ($formerStatus == Member::STATUS_INVITED){
+			$this->miscService->log("member $memberName refused invitation to circle $circleName");
+		} else if ($circle->getType() == Circle::CIRCLES_CLOSED) {
+			$this->miscService->log("member $memberName cancelled invitation from circle $circleName");
+		} else {
+			$this->miscService->log("member $memberName left circle $circleName");
+		}
 
 		return $member;
 	}
@@ -400,19 +438,32 @@ class CirclesService {
 
 		$this->eventsService->onCircleDestruction($circle);
 
+		$shares = \OC::$server->getShareManager()->getSharedWith($circle->getUniqueId(), Share::SHARE_TYPE_CIRCLE);
+		$this->eventsService->onShareFromMemberDestruction($shares);
+
 		$this->membersRequest->removeAllFromCircle($circleUniqueId);
 		$this->circlesRequest->destroyCircle($circleUniqueId);
+
+		$circleName = $circle->getName();
+		$user = $this->getUser()->getDisplayName();
+		$this->miscService->log("user $user destroyed circle $circleName");
 	}
 
 
 	/**
-	 * @param $circleName
+	 * @param string $circleName
+	 * @param boolean $getOwner
+	 * @param boolean $getMembers
 	 *
 	 * @return Circle|null
 	 * @throws CircleDoesNotExistException
 	 */
-	public function infoCircleByName($circleName) {
-		return $this->circlesRequest->forceGetCircleByName($circleName);
+	public function infoCircleByName($circleName, $getOwner = false, $getMembers = false) {
+		$circle = $this->circlesRequest->forceGetCircleByName($circleName, $getOwner);
+		if ($getMembers){
+			$this->detailsCircleMembers($circle);
+		}
+		return $circle;
 	}
 
 
@@ -557,7 +608,7 @@ class CirclesService {
 	public function checkThatCircleIsNotFull(Circle $circle) {
 
 		$members = $this->membersRequest->forceGetMembers(
-			$circle->getUniqueId(), Member::STATUS_MEMBER, true
+			$circle->getUniqueId(), Member::LEVEL_MEMBER, true
 		);
 
 		$limit = $circle->getSetting('members_limit');
@@ -619,5 +670,34 @@ class CirclesService {
 				$this->l10n->t('This member is not an admin of the circle')
 			);
 		}
+	}
+
+	/**
+	 * @param string $uniqueId
+	 * @param boolean $getMembers
+	 *
+	 * @return Circle|null
+	 * @throws CircleDoesNotExistException
+	 */
+	public function infoCircleByUniqueId($circleUniqueId, $getMembers = false) {
+		$circle = $this->circlesRequest->getCircleFromShortenUniqueId($circleUniqueId);
+		if ($this->viewerIsAdmin() || $getMembers) {
+			$this->higherViewerCircle($circle);
+			$this->detailsCircleMembers($circle);
+		}
+		return $circle;
+	}
+	
+	/**
+	 * @param Circle $circle
+	 * @return Circle
+	 */
+	private function higherViewerCircle(Circle &$circle) {
+		if ($circle->getHigherViewer() === null) {
+			$member = new Member();
+			$member->setLevel(Member::LEVEL_MEMBER);
+			$circle->setViewer($member);
+		}
+		return $circle;
 	}
 }

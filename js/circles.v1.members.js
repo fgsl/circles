@@ -30,7 +30,7 @@ var members = {
 
 
 	searchUsers: function (search, callback) {
-
+	    $('#addmember').val(t('Searching for users like...') + search);
 		var result = {status: -1};
 		$.ajax({
 			method: 'GET',

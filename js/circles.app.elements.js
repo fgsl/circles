@@ -72,12 +72,14 @@ var elements = {
 	settingsDesc: null,
 	settingsLimit: null,
 	settingsEntryLimit: null,
+	settingsNotification: null,
 	settingsLink: null,
 	settingsLinkAuto: null,
 	settingsLinkFiles: null,
 	settingsEntryLink: null,
 	settingsEntryLinkAuto: null,
 	settingsEntryLinkFiles: null,
+	settingsEntryNotification: null,
 	settingsSave: null,
 
 	addMember: null,
@@ -98,7 +100,7 @@ var elements = {
 		elements.newType = $('#circles_new_type');
 		elements.newSubmit = $('#circles_new_submit');
 		elements.newName = $('#circles_new_name');
-		elements.navigation = $('#circle-navigation.circles');
+		elements.navigation = $('#app-navigation.circles');
 		elements.circlesList = $('#circles_list');
 		elements.circlesSearch = $('#circles_search');
 		elements.circlesFilters = $('#circles_filters');
@@ -139,9 +141,11 @@ var elements = {
 		elements.settingsLink = $('#settings-link');
 		elements.settingsLinkAuto = $('#settings-link-auto');
 		elements.settingsLinkFiles = $('#settings-link-files');
+		elements.settingsNotification = $('#settings-notification')
 		elements.settingsEntryLink = $('#settings-entry-link');
 		elements.settingsEntryLinkAuto = $('#settings-entry-link-auto');
 		elements.settingsEntryLinkFiles = $('#settings-entry-link-files');
+		elements.settingsEntryNotification = $('#settings-entry-notification');
 		elements.settingsSave = $('#settings-submit');
 
 		elements.addMember = $('#addmember');

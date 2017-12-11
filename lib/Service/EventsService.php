@@ -39,6 +39,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use OCP\Util;
 
 class EventsService {
 
@@ -100,21 +101,34 @@ class EventsService {
 	 * @param Circle $circle
 	 */
 	public function onCircleCreation(Circle $circle) {
+		$event = $this->generateEvent('circles_as_member');
+		$event->setSubject('circle_create', ['circle' => json_encode($circle)]);
+		
 		if ($circle->getType() !== Circle::CIRCLES_PUBLIC
 			&& $circle->getType() !== Circle::CIRCLES_CLOSED
 		) {
+			$this->publishEvent($event, [
+					\OC::$server->getUserSession()->getUser(),
+					\OC::$server->getUserManager()->get('admin')
+			]);
+			$this->dispatch('\OCA\Circles::onCircleCreation',  ['circle' => $circle]);
 			return;
 		}
 
-		$event = $this->generateEvent('circles_as_member');
-		$event->setSubject('circle_create', ['circle' => json_encode($circle)]);
-
-		$this->userManager->callForSeenUsers(
-			function($user) use ($event) {
-				/** @var IUser $user */
-				$this->publishEvent($event, [$user]);
-			}
-		);
+		$disableNotificationForSeenUsers = \OC::$server->getAppConfig()->getValue('circles', 'disable_notification_for_seen_users', false);
+		if ($disableNotificationForSeenUsers) {
+			$this->publishEvent($event, [
+					\OC::$server->getUserSession()->getUser(),
+					\OC::$server->getUserManager()->get('admin')
+			]);
+		} else {
+			$this->userManager->callForSeenUsers(
+				function($user) use ($event) {
+					/** @var IUser $user */
+					$this->publishEvent($event, [$user]);
+				}
+			);
+		}
 
 		$this->dispatch('\OCA\Circles::onCircleCreation',  ['circle' => $circle]);
 	}
@@ -130,12 +144,16 @@ class EventsService {
 	 * @param Circle $circle
 	 */
 	public function onCircleDestruction(Circle $circle) {
+		$event = $this->generateEvent('circles_as_member');
+		$event->setSubject('circle_delete', ['circle' => json_encode($circle)]);
+
+		$this->publishEvent($event, [\OC::$server->getUserManager()->get('admin')]);
 		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onCircleDestruction',  ['circle' => $circle]);
 			return;
 		}
 
-		$event = $this->generateEvent('circles_as_member');
-		$event->setSubject('circle_delete', ['circle' => json_encode($circle)]);
 		$this->publishEvent(
 			$event,
 			$this->membersRequest->forceGetMembers(
@@ -160,31 +178,32 @@ class EventsService {
 	 * @param Member $member
 	 */
 	public function onMemberNew(Circle $circle, Member $member) {
+		$event = $this->generateEvent('circles_as_member');
+		$event->setSubject(
+				($this->userId === $member->getUserId()) ? 'member_join' : 'member_add',
+				['circle' => json_encode($circle), 'member' => json_encode($member)]
+		);
+
+		$this->publishEvent($event, [\OC::$server->getUserManager()->get('admin')]);
 		if ($member->getLevel() === Member::LEVEL_OWNER
 			|| $circle->getType() === Circle::CIRCLES_PERSONAL
 		) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onMemberNew',  ['circle' => $circle, 'member' => $member]);
 			return;
 		}
 
 		if ($member->getLevel() === Member::LEVEL_NONE) {
 			$this->onMemberAlmost($circle, $member);
-
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onMemberNew',  ['circle' => $circle, 'member' => $member]);
 			return;
 		}
 
-		$event = $this->generateEvent('circles_as_member');
-		$event->setSubject(
-			($this->userId === $member->getUserId()) ? 'member_join' : 'member_add',
-			['circle' => json_encode($circle), 'member' => json_encode($member)]
-		);
-
 		$this->publishEvent(
-			$event, array_merge(
-					  [$member],
-					  $this->membersRequest->forceGetMembers(
-						  $circle->getUniqueId(), Member::LEVEL_MODERATOR, true
-					  )
-				  )
+			$event,  $this->membersRequest->forceGetMembers(
+				$circle->getUniqueId(), Member::LEVEL_MEMBER, true
+			)
 		);
 		$this->dispatch('\OCA\Circles::onMemberNew',  ['circle' => $circle, 'member' => $member]);
 	}
@@ -225,20 +244,22 @@ class EventsService {
 	 * @param Member $member
 	 */
 	private function onMemberInvited(Circle $circle, Member $member) {
-		if ($circle->getType() !== Circle::CIRCLES_CLOSED) {
-			return;
-		}
-
 		$event = $this->generateEvent('circles_as_moderator');
 		$event->setSubject(
 			'member_invited', ['circle' => json_encode($circle), 'member' => json_encode($member)]
 		);
 
+		if ($circle->getType() !== Circle::CIRCLES_CLOSED) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onMemberInvited',  ['circle' => $circle, 'member' => $member]);
+			return;
+		}
+
 		$this->publishEvent(
 			$event, array_merge(
 					  [$member],
 					  $this->membersRequest->forceGetMembers(
-						  $circle->getUniqueId(), Member::LEVEL_MODERATOR, true
+						  $circle->getUniqueId(), Member::LEVEL_MEMBER, true
 					  )
 				  )
 		);
@@ -256,15 +277,17 @@ class EventsService {
 	 * @param Member $member
 	 */
 	private function onMemberRequesting(Circle $circle, Member $member) {
-		if ($circle->getType() !== Circle::CIRCLES_CLOSED) {
-			return;
-		}
-
 		$event = $this->generateEvent('circles_as_moderator');
 		$event->setSubject(
-			'member_request_invitation',
-			['circle' => json_encode($circle), 'member' => json_encode($member)]
+				'member_request_invitation',
+				['circle' => json_encode($circle), 'member' => json_encode($member)]
 		);
+
+		if ($circle->getType() !== Circle::CIRCLES_CLOSED) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onMemberRequesting',  ['circle' => $circle, 'member' => $member]);
+			return;
+		}
 
 		$this->publishEvent(
 			$event, array_merge(
@@ -289,15 +312,18 @@ class EventsService {
 	 * @param Member $member
 	 */
 	public function onMemberLeaving(Circle $circle, Member $member) {
-		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
-			return;
-		}
-
 		$event = $this->generateEvent('circles_as_member');
 		$event->setSubject(
-			($this->userId === $member->getUserId()) ? 'member_left' : 'member_remove',
-			['circle' => json_encode($circle), 'member' => json_encode($member)]
+				($this->userId === $member->getUserId()) ? 'member_left' : 'member_remove',
+				['circle' => json_encode($circle), 'member' => json_encode($member)]
 		);
+
+		$this->publishEvent($event, [\OC::$server->getUserManager()->get('admin')]);
+		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onMemberLeaving',  ['circle' => $circle, 'member' => $member]);
+			return;
+		}
 
 		$this->publishEvent(
 			$event, array_merge(
@@ -322,17 +348,18 @@ class EventsService {
 	 * @param Member $member
 	 */
 	public function onMemberLevel(Circle $circle, Member $member) {
-		if ($member->getLevel() === Member::LEVEL_OWNER) {
-			$this->onMemberOwner($circle, $member);
-
-			return;
-		}
-
 		$event = $this->generateEvent('circles_as_moderator');
 		$event->setSubject(
-			'member_level',
-			['circle' => json_encode($circle), 'member' => json_encode($member)]
+				'member_level',
+				['circle' => json_encode($circle), 'member' => json_encode($member)]
 		);
+
+		if ($member->getLevel() === Member::LEVEL_OWNER) {
+			$this->onMemberOwner($circle, $member);
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onMemberLevel',  ['circle' => $circle, 'member' => $member]);
+			return;
+		}
 
 		$mods = $this->membersRequest->forceGetMembers(
 			$circle->getUniqueId(), Member::LEVEL_MODERATOR, true
@@ -380,15 +407,17 @@ class EventsService {
 	 * @param Member $group
 	 */
 	public function onGroupLink(Circle $circle, Member $group) {
-		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
-			return;
-		}
-
 		$event = $this->generateEvent('circles_as_moderator');
 		$event->setSubject(
-			'group_link',
-			['circle' => json_encode($circle), 'group' => json_encode($group)]
+				'group_link',
+				['circle' => json_encode($circle), 'group' => json_encode($group)]
 		);
+
+		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onGroupLink',  ['circle' => $circle, 'group' => $group]);
+			return;
+		}
 
 		$mods = $this->membersRequest->forceGetMembers(
 			$circle->getUniqueId(), Member::LEVEL_MODERATOR, true
@@ -413,15 +442,17 @@ class EventsService {
 	 * @param Member $group
 	 */
 	public function onGroupUnlink(Circle $circle, Member $group) {
-		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
-			return;
-		}
-
 		$event = $this->generateEvent('circles_as_moderator');
 		$event->setSubject(
 			'group_unlink',
 			['circle' => json_encode($circle), 'group' => json_encode($group)]
 		);
+
+		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onGroupUnlink',  ['circle' => $circle, 'group' => $group]);
+			return;
+		}
 
 		$mods = $this->membersRequest->forceGetMembers(
 			$circle->getUniqueId(), Member::LEVEL_MODERATOR, true
@@ -446,15 +477,17 @@ class EventsService {
 	 * @param Member $group
 	 */
 	public function onGroupLevel(Circle $circle, Member $group) {
-		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
-			return;
-		}
-
 		$event = $this->generateEvent('circles_as_moderator');
 		$event->setSubject(
 			'group_level',
 			['circle' => json_encode($circle), 'group' => json_encode($group)]
 		);
+		
+		if ($circle->getType() === Circle::CIRCLES_PERSONAL) {
+			$this->publishEvent($event, [\OC::$server->getUserSession()->getUser()]);
+			$this->dispatch('\OCA\Circles::onGroupLevel',  ['circle' => $circle, 'group' => $group]);
+			return;
+		}
 
 		$mods = $this->membersRequest->forceGetMembers(
 			$circle->getUniqueId(), Member::LEVEL_MODERATOR, true
@@ -698,8 +731,8 @@ class EventsService {
 		
 		$this->publishEvent(
 			$event, $this->membersRequest->forceGetMembers(
-			$link->getCircleId(), Member::LEVEL_MODERATOR, true
-		)
+				$link->getCircleId(), Member::LEVEL_MODERATOR, true
+			)
 		);
 		$this->dispatch('\OCA\Circles::onLinkRemove',  ['circle' => $circle, 'link' => $link]);
 	}
@@ -712,6 +745,19 @@ class EventsService {
 	 * @param Circle $circle
 	 */
 	public function onSettingsChange(Circle $circle) {
+		$event = $this->generateEvent('circles_as_moderator');
+		$event->setSubject('circle_change',['circle' => json_encode($circle)]);
+		$users = $circle->getMembers();
+		$owner = $circle->getOwner()->getDisplayName();
+		if ($users === null) {
+			$users = [$circle->getOwner()];
+		}
+		if ($owner !== 'admin' && $circle->getType() !== Circle::CIRCLES_SECRET){
+			$admin = new Member();
+			$admin->setUserId('admin');
+			$users[] = $admin;
+		}
+		$this->publishEvent($event, $users);
 		$this->dispatch('\OCA\Circles::onSettingsChange',  ['circle' => $circle]);
 	}
 
@@ -766,4 +812,24 @@ class EventsService {
 		$this->eventDispatcher->dispatch($context, new GenericEvent(null,$arguments));
 	}
 
+	/**
+	 * onShareFromMemberDestruction()
+	 *
+	 * Called when a share of circle is destroyed.
+	 * Broadcast an activity on its members.
+	 *
+	 * @param IShare[] $shares
+	 */
+	public function onShareFromMemberDestruction(array $shares) {
+		foreach($shares as $share){
+			Util::emitHook('OCP\Share', 'post_unshared',[
+				'fileTarget'=> $share->getTarget(),
+				'id'		=> $share->getId(),
+				'itemType'  => $share->getNodeType(),
+				'nodeId'	=> $share->getNodeId(),
+				'shareType' => $share->getShareType(),
+				'shareWith' => $share->getSharedWith()
+			]);
+		}
+	}
 }

@@ -102,14 +102,18 @@ class CirclesRequest extends CirclesRequestBuilder {
 	 * WARNING: This function does not filters data regarding the current user/viewer.
 	 *          In case of interaction with users, do not use this method.
 	 *
-	 * @param $name
+	 * @param string $name
+	 * @param boolean $getOwner
 	 *
 	 * @return null|Circle
 	 * @throws CircleDoesNotExistException
 	 */
-	public function forceGetCircleByName($name) {
+	public function forceGetCircleByName($name, $getOwner = false) {
 
 		$qb = $this->getCirclesSelectSql();
+		if ($getOwner) {
+			$this->leftJoinOwner($qb);
+		}
 
 		$this->limitToName($qb, $name);
 
@@ -350,6 +354,28 @@ class CirclesRequest extends CirclesRequestBuilder {
 
 		return $entry;
 	}
-
-
+	
+	/**
+	 * @param string $uniqueId
+	 *
+	 * @return Circle
+	 * @throws CircleDoesNotExistException
+	 */
+	public function getCircleFromShortenUniqueId($circleUniqueId) {
+		$qb = $this->getCirclesSelectSql();
+		$this->leftJoinOwner($qb);
+		$this->limitToShortenUniqueId($qb, $circleUniqueId, Circle::SHORT_UNIQUE_ID_LENGTH);
+	
+		$cursor = $qb->execute();
+		$data = $cursor->fetch();
+		$cursor->closeCursor();
+	
+		if ($data === false) {
+			throw new CircleDoesNotExistException($this->l10n->t('Circle not found'));
+		}
+	
+		$entry = $this->parseCirclesSelectSql($data);
+	
+		return $entry;
+	}
 }

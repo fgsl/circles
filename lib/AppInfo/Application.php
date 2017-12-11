@@ -35,7 +35,6 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\IAppContainer;
 use OCP\Util;
 
-
 class Application extends App {
 
 	const APP_NAME = 'circles';
@@ -69,6 +68,12 @@ class Application extends App {
 		);
 		Util::connectHook(
 			'OC_User', 'post_deleteGroup', '\OCA\Circles\Hooks\UserHooks', 'onGroupDeleted'
+		);
+		Util::connectHook(
+			'OCP\Share', 'post_shared', '\OCA\Circles\Hooks\UserHooks', 'onItemShared'
+		);
+		Util::connectHook(
+			'OCP\Share', 'post_unshared', '\OCA\Circles\Hooks\UserHooks', 'onItemUnshared'
 		);
 	}
 
@@ -134,6 +139,5 @@ class Application extends App {
 			}
 		);
 	}
-
 }
 

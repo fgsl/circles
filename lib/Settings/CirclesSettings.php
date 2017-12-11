@@ -52,7 +52,7 @@ class CirclesSettings implements ISettings {
 	 * @return string
 	 */
 	public function getSection() {
-		return 'groupware';
+		return 'additional';
 	}
 
 	/**
