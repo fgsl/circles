@@ -61,6 +61,8 @@ var curr = {
 	allowed_federated_circles: 0,
 	allowed_circles: 0,
 	enabled_audit: 0,
+	allow_contact_as_member: 0,
+	allow_email_as_member: 0,
 
 	defineCircle: function (data) {
 		curr.circle = data.circle_id;
@@ -194,6 +196,8 @@ $(document).ready(function () {
 			curr.allowed_linked_groups = result.allowed_linked_groups;
 			curr.allowed_federated_circles = result.allowed_federated_circles;
 			curr.enabled_audit = result.enabled_audit;
+			curr.allowed_contact_as_member = result.allowed_contact_as_member;
+			curr.allowed_email_as_member = result.allowed_email_as_member;
 
 			var circleId = window.location.hash.substr(1);
 			if (circleId) {

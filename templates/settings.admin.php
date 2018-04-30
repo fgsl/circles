@@ -44,5 +44,21 @@ style(Application::APP_NAME, 'admin');
 				<input type="checkbox" value="1" id="enable_audit"/>
 			</td>
 		</tr>
+		<tr class="lane">
+			<td colspan="2" class="left"><?php p($l->t('Allow contact as member:')); ?><br/>
+				<em><?php p($l->t('A contact can be added as member of a circle.')); ?></em>
+			</td>
+			<td class="right">
+				<input type="checkbox" value="1" id="allow_contact_as_member"/>
+			</td>
+		</tr>
+		<tr class="lane">
+			<td colspan="2" class="left"><?php p($l->t('Allow email address as member:')); ?><br/>
+				<em><?php p($l->t('A email address can ve added as member of a circle.')); ?></em>
+			</td>
+			<td class="right">
+				<input type="checkbox" value="1" id="allow_email_as_member"/>
+			</td>
+		</tr>		
 	</table>
 </div>

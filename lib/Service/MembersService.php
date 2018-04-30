@@ -110,6 +110,13 @@ class MembersService {
 	public function addMember($circleUniqueId, $ident, $type) {
 
 		try {
+			if ($type == Member::TYPE_CONTACT && !$this->configService->isAllowedContactAsMember()){
+				throw new \Exception('Contact is not allowed as member');
+			}
+			if ($type == Member::TYPE_MAIL && !$this->configService->isAllowedEmailAsMember()){
+				throw new \Exception('Email address is not allowed as member');
+			}	
+			
 			$circle = $this->circlesRequest->getCircle($circleUniqueId, $this->userId);
 			$circle->getHigherViewer()
 				   ->hasToBeModerator();
@@ -210,7 +217,6 @@ class MembersService {
 	 * @throws \Exception
 	 */
 	private function addEmailAddress(Member $member) {
-
 		if ($member->getType() !== Member::TYPE_MAIL) {
 			return;
 		}
@@ -227,7 +233,6 @@ class MembersService {
 	 * @throws \Exception
 	 */
 	private function addContact(Member $member) {
-
 		if ($member->getType() !== Member::TYPE_CONTACT) {
 			return;
 		}

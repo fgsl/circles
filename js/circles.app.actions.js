@@ -129,7 +129,9 @@ var actions = {
 			allow_links: (elements.settingsLink.is(":checked")),
 			allow_links_auto: (elements.settingsLinkAuto.is(":checked")),
 			allow_links_files: (elements.settingsLinkFiles.is(":checked")),
-			enable_audit: (elements.settingsEnableAudit.is(":checked"))
+			enable_audit: (elements.settingsEnableAudit.is(":checked")),
+			allow_contact_as_member: (elements.settingsAllowContactAsMember.is(":checked")),
+			allow_email_as_member: (elements.settingsAllowEmailAsMember.is(":checked"))
 		};
 
 		api.settingsCircle(curr.circle, data, settings.saveSettingsResult);

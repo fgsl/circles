@@ -44,7 +44,9 @@ $(document).ready(function () {
 	elements.test_async_result = $('#test_async_result');
 	elements.allow_linked_groups = $('#allow_linked_groups');
 	elements.allow_federated_circles = $('#allow_federated_circles');
-	elements.enable_audit = $('#enable_audit');	
+	elements.enable_audit = $('#enable_audit');
+    elements.allow_contact_as_member = $('#allow_contact_as_member');
+    elements.allow_email_as_member = $('#allow_email_as_member');
 
 	elements.test_async_wait.hide().on('click', function () {
 		self.refreshResult();
@@ -79,6 +81,14 @@ $(document).ready(function () {
 	elements.enable_audit.on('change', function () {
 	    saveChange();
 	});
+	
+	elements.allow_contact_as_member.on('change', function () {
+	    saveChange();
+	});
+
+	elements.allow_email_as_member.on('change', function () {
+	    saveChange();
+	});
 
 	saveChange = function () {
 		$.ajax({
@@ -90,12 +100,18 @@ $(document).ready(function () {
 				allow_federated_circles: (elements.allow_federated_circles.is(
 					':checked')) ? '1' : '0',
 			    enable_audit: (elements.enable_audit.is(
+		            ':checked')) ? '1' : '0',
+		        allow_contact_as_member: (elements.allow_contact_as_member.is(
+		            ':checked')) ? '1' : '0',
+		        allow_email_as_member: (elements.allow_email_as_member.is(
 		            ':checked')) ? '1' : '0'
 			}
 		}).done(function (res) {
 			elements.allow_linked_groups.prop('checked', (res.allowLinkedGroups === '1'));
 			elements.allow_federated_circles.prop('checked', (res.allowFederatedCircles === '1'));
 			elements.enable_audit.prop('checked', (res.enableAudit === '1'));
+			elements.allow_contact_as_member.prop('checked', (res.allowContactAsMember === '1'));
+			elements.allow_email_as_member.prop('checked', (res.allowEmailAsMember === '1'));
 		});
 	};
 

@@ -76,6 +76,8 @@ var elements = {
 	settingsEntryLinkAuto: null,
 	settingsEntryLinkFiles: null,
 	settingsEnableAudit: null,
+	settingsAllowContactAsMember: null,
+	settingsAllowEmailAsMember: null,
 	settingsSave: null,
 
 	addMember: null,
@@ -132,7 +134,9 @@ var elements = {
 		elements.settingsEntryLink = $('#settings-entry-link');
 		elements.settingsEntryLinkAuto = $('#settings-entry-link-auto');
 		elements.settingsEntryLinkFiles = $('#settings-entry-link-files');
-        elements.settingsEnableAudit = $('#settings-enable-audit');		
+		elements.settingsEnableAudit = $('#settings-enable-audit');
+		elements.settingsAllowContactAsMember = $('#settings-allow-contact-as-member');
+		elements.settingsAllowEmailAsMember = $('#settings-allow-email-as-member');
 		elements.settingsSave = $('#settings-submit');
 
 		elements.addMember = $('#addmember');
