@@ -277,6 +277,10 @@ OC.L10N.register(
     "Allow federated circles:" : "Permitir círculos federados:",
     "Circles from different Nextclouds can be linked together." : "Círculos de diferentes Nextclouds podem ser linkados juntos.",
     "Enable audit:" : "Habilitar auditoria:",
-    "Actions of circles, members and sharing can be audited." : "Ações de círculos, membros e compartilhamentos podem ser auditadas."
+    "Actions of circles, members and sharing can be audited." : "Ações de círculos, membros e compartilhamentos podem ser auditadas.",
+    "Allow contact as member:" : "Permitir contato como membro:",
+    "A contact can be added as member of a circle." : "Um contato pode ser adicionado como membro de um círculo.",
+    "Allow email address as member:" : "Permitir e-mail como membro:",
+    "A email address can be added as member of a circle." : "Um endereço de e-mail pode ser adicionado como membro de um círculo."
 },
 "nplurals=2; plural=(n > 1);");

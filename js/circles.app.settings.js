@@ -56,6 +56,10 @@ var settings = {
 			(curr.circleSettings['allow_links_files'] === 'true'));
 		elements.settingsEnableAudit.prop('checked',
 		    (curr.circleSettings['enable_audit'] === 'true'));
+		elements.settingsAllowContactAsMember.prop('checked',
+		        (curr.circleSettings['allow_contact_as_member'] === 'true'));
+		elements.settingsAllowEmailAsMember.prop('checked',
+		        (curr.circleSettings['allow_email_as_member'] === 'true'));
 
 		elements.settingsLink.on('change', function () {
 			settings.interactUISettings();

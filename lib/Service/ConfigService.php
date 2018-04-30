@@ -46,6 +46,8 @@ class ConfigService {
 	const CIRCLES_TEST_ASYNC_COUNT = 'test_async_count';
 	
 	const CIRCLES_ENABLE_AUDIT = 'circles_enable_audit';
+	const CIRCLES_ALLOW_CONTACT_AS_MEMBER = 'circles_allow_contact_as_member';
+	const CIRCLES_ALLOW_EMAIL_AS_MEMBER = 'circles_allow_email_as_member';
 
 	private $defaults = [
 		self::CIRCLES_ALLOW_CIRCLES           => Circle::CIRCLES_ALL,
@@ -55,7 +57,9 @@ class ConfigService {
 		self::CIRCLES_ALLOW_FEDERATED_CIRCLES => '0',
 		self::CIRCLES_ALLOW_NON_SSL_LINKS     => '0',
 		self::CIRCLES_NON_SSL_LOCAL           => '0',
-		self::CIRCLES_ENABLE_AUDIT            => '0'
+		self::CIRCLES_ENABLE_AUDIT            => '0',
+		self::CIRCLES_ALLOW_CONTACT_AS_MEMBER => '0',
+		self::CIRCLES_ALLOW_EMAIL_AS_MEMBER   => '0',
 	];
 
 	/** @var string */
@@ -90,6 +94,12 @@ class ConfigService {
 	
 	/** $var int */
 	private $enableAudit = -1;
+	
+	/** $var int */
+	private $allowContactAsMember = -1;
+	
+	/** $var int */
+	private $allowEmailAsMember = -1;
 
 	/**
 	 * ConfigService constructor.
@@ -317,5 +327,29 @@ class ConfigService {
 			$this->enableAudit = (int)$this->getAppValue(self::CIRCLES_ENABLE_AUDIT);
 		}
 		return ((int)$this->enableAudit);
+	}
+	
+	/**
+	 * returns if contact is allowed as member by the current configuration.
+	 *
+	 * @return int
+	 */
+	public function isAllowedContactAsMember() {
+		if ($this->allowContactAsMember === -1) {
+			$this->allowContactAsMember = (int)$this->getAppValue(self::CIRCLES_ALLOW_CONTACT_AS_MEMBER);
+		}
+		return ((int)$this->allowContactAsMember);
+	}
+
+	/**
+	 * returns if email address is allowed as member by the current configuration.
+	 *
+	 * @return int
+	 */
+	public function isAllowedEmailAsMember() {
+		if ($this->allowEmailAsMember === -1) {
+			$this->allowEmailAsMember = (int)$this->getAppValue(self::CIRCLES_ALLOW_EMAIL_AS_MEMBER);
+		}
+		return ((int)$this->allowEmailAsMember);
 	}
 }

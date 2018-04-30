@@ -58,6 +58,14 @@ This options allows that actions of circles, members and sharing can be audit wi
 * User X change role of member Y in circle Z for W.
 * User X was invited to circle U by user Z
 
+### Allow contact as member
+
+This option allows that a contact be added as a member of a circle
+
+### Allow email address as member
+
+This option allows that a email address be added as a member of a circle
+
 ***
 # API (PHP & Javascript)
 
