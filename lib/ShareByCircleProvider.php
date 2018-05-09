@@ -165,13 +165,33 @@ class ShareByCircleProvider extends CircleProviderRequest implements IShareProvi
 			);
 
 			if ($this->configService->isAuditEnabled()){
-				Util::emitHook('OCP\Share', 'post_share',['shareWith'=> $circle->getName(),'fileTarget'=> $share->getTarget()]);
-			}			
+				Util::emitHook('OCP\Share', 'post_shared',[
+					'fileSource'	=> $share->getNodeId(),// required by Activity app
+					'fileTarget'	=> $share->getTarget(),
+					'id' 			=> $share->getId(),// required by Activity app
+					'itemTarget'	=> $share->getTarget(), // required by Activity app
+					'itemSource'	=> $share->getTarget(), // required by Activity app
+					'itemType' 		=> $share->getNodeType(),// required by Activity app
+					'permissions' 	=> $share->getPermissions(), // required by Activity app
+					'shareType' 	=> \OCP\Share::SHARE_TYPE_CIRCLE, // required by Activity app
+					'shareWith'		=> $circle->getUniqueId()
+				]);
+			}
 
 			return $this->getShareById($shareId);
 		} catch (\Exception $e) {
 			if ($this->getShareById($shareId) && $this->configService->isAuditEnabled()){
-				Util::emitHook('OCP\Share', 'post_share',['shareWith'=> $circle->getName(),'fileTarget'=> $share->getTarget()]);
+				Util::emitHook('OCP\Share', 'post_shared',[
+					'fileSource'	=> $share->getNodeId(),// required by Activity app
+					'fileTarget'	=> $share->getTarget(),
+					'id' 			=> $share->getId(),// required by Activity app
+					'itemTarget'	=> $share->getTarget(), // required by Activity app
+					'itemSource'	=> $share->getTarget(), // required by Activity app
+					'itemType' 		=> $share->getNodeType(),// required by Activity app
+					'permissions' 	=> $share->getPermissions(), // required by Activity app
+					'shareType' 	=> \OCP\Share::SHARE_TYPE_CIRCLE, // required by Activity app
+					'shareWith'		=> $circle->getUniqueId()
+				]);
 			}			
 			throw $e;
 		}
@@ -216,10 +236,16 @@ class ShareByCircleProvider extends CircleProviderRequest implements IShareProvi
 		$circle = $container->query(CirclesService::class)->detailsCircle($share->getSharedWith());
 
 		if ($this->configService->isAuditEnabled()){
-			Util::emitHook('OCP\Share', 'post_unshare',[
-				'fileTarget'=> $share->getTarget(),
-				'shareType' => $share->getShareType(),
-				'shareWith'=> $circle->getName()
+			Util::emitHook('OCP\Share', 'post_unshared',[
+				'fileSource'	=> $share->getTarget(),// required by Activity app
+				'fileTarget'	=> $share->getTarget(),
+				'id' 			=> $share->getId(),// required by Activity app
+				'itemTarget'	=> $share->getTarget(), // required by Activity app
+				'itemSource'	=> $share->getTarget(), // required by Activity app
+				'itemType' 		=> $share->getNodeType(),// required by Activity app
+				'permissions' 	=> $share->getPermissions(), // required by Activity app
+				'shareType' 	=> \OCP\Share::SHARE_TYPE_CIRCLE, // required by Activity app
+				'shareWith'		=> $share->getSharedWith()
 			]);
 		}
 	}
@@ -248,10 +274,16 @@ class ShareByCircleProvider extends CircleProviderRequest implements IShareProvi
 		}
 
 		if ($this->configService->isAuditEnabled()){
-			Util::emitHook('OCP\Share', 'post_unshare',[
-				'fileTarget'=> $share->getTarget(),
-				'shareType' => $share->getShareType(),
-				'shareWith'=> $shareWith
+			Util::emitHook('OCP\Share', 'post_unshared',[
+				'fileSource'	=> $share->getTarget(),// required by Activity app
+				'fileTarget'	=> $share->getTarget(),
+				'id' 			=> $share->getId(),// required by Activity app
+				'itemTarget'	=> $share->getTarget(), // required by Activity app
+				'itemSource'	=> $share->getTarget(), // required by Activity app
+				'itemType' 		=> $share->getNodeType(),// required by Activity app
+				'permissions' 	=> $share->getPermissions(), // required by Activity app
+				'shareType' 	=> \OCP\Share::SHARE_TYPE_CIRCLE, // required by Activity app
+				'shareWith'		=> $share->getSharedWith()
 			]);
 		}
 	}

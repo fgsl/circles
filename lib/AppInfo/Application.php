@@ -86,10 +86,10 @@ class Application extends App {
 			'OCA\Circles', 'post_removeMember', '\OCA\Circles\Hooks\UserHooks', 'onMemberRemoved'
 		);
 		Util::connectHook(
-			'OCP\Share', 'post_share', '\OCA\Circles\Hooks\UserHooks', 'onItemShared'
+			'OCP\Share', 'post_shared', '\OCA\Circles\Hooks\UserHooks', 'onItemShared'
 		);
 		Util::connectHook(
-			'OCP\Share', 'post_unshare', '\OCA\Circles\Hooks\UserHooks', 'onItemUnshared'
+			'OCP\Share', 'post_unshared', '\OCA\Circles\Hooks\UserHooks', 'onItemUnshared'
 		);
 		Util::connectHook(
 			'OCA\Circles', 'post_joinMember', '\OCA\Circles\Hooks\UserHooks', 'onMemberJoined'
