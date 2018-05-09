@@ -2,7 +2,7 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 	<id>circles</id>
-	<name>Circles</name>
+	<name>Circles - Extended Release</name>
 	<summary>Bring cloud-users closer together.</summary>
 	<description><![CDATA[Circles allows your users to create their own groups of users/colleagues/friends.
 Those groups of users (or 'circles') can then be used by any other app for sharing purpose (files, social feed, status update, messaging, ...).
