@@ -283,6 +283,7 @@ OC.L10N.register(
     "You shared {file} with circle {circle}" : "Você compartilhou {file} com o círculo {circle}",
     "{author} shared {file} with the circle {circle}" : "{author} compartilhou {file} com o círculo {circle}",
     "You unshared {file} with the circle {circle}" : "Você descompartilhou {file} com o círculo {circle}",
-    "{author} unshared {file} with the circle {circle}" : "{author} descompartilhou {file} com o círculo {circle}"
+    "{author} unshared {file} with the circle {circle}" : "{author} descompartilhou {file} com o círculo {circle}",
+    "Searching users..." : "Buscando usuários..."
 },
 "nplurals=2; plural=(n > 1);");
